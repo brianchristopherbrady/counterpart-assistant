@@ -34,6 +34,17 @@ export function createComponent<E extends HTMLElement, P extends object = Record
       if (!el) return;
       for (const [key, value] of Object.entries(rest)) {
         if (key in events) continue;
+        // aria-*/data-*/role are real reflected HTML attributes, not necessarily camelCase JS
+        // properties on the underlying FAST class — set them via setAttribute so they always
+        // reach the DOM (and the accessibility tree) regardless of the element's own property names.
+        if (/^(aria-|data-)/.test(key) || key === "role") {
+          if (value === undefined || value === null || value === false) {
+            el.removeAttribute(key);
+          } else {
+            el.setAttribute(key, String(value));
+          }
+          continue;
+        }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (el as any)[key] = value;
       }

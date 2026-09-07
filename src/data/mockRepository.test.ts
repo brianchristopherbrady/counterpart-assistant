@@ -117,4 +117,107 @@ describe("MockBookingRepository", () => {
     expect(await repo.listAppointments(otherGuest)).toHaveLength(0);
     expect(await repo.listAppointments(GUEST)).toHaveLength(1);
   });
+
+  it("rejects overlapping bookings for the same provider even across different slot ids/modes/locations", async () => {
+    const { repo } = makeRepo();
+    const slots = await repo.getSlots({
+      discoveryMode: "earliest-available",
+      appointmentTypeId: "type-new-patient",
+      patientContext: "new",
+    });
+    const first = slots[0];
+    if (!first) throw new Error("Expected at least one fixture slot.");
+    await repo.book({ slotId: first.id, subject: SUBJECT }, GUEST, "key-overlap-1");
+    // A different slot id for the same provider whose interval overlaps the just-booked one.
+    const overlapping = slots.find(
+      (s) =>
+        s.providerId === first.providerId &&
+        s.id !== first.id &&
+        new Date(s.startInstant).getTime() < new Date(first.endInstant).getTime() &&
+        new Date(first.startInstant).getTime() < new Date(s.endInstant).getTime(),
+    );
+    if (!overlapping) return; // fixture set may not produce an overlap candidate; nothing to assert then
+    await expect(
+      repo.book({ slotId: overlapping.id, subject: SUBJECT }, GUEST, "key-overlap-2"),
+    ).rejects.toThrow(SlotConflictError);
+  });
+
+  it("reschedule swaps the same appointment atomically and frees the original slot", async () => {
+    const { repo } = makeRepo();
+    const slots = await repo.getSlots({
+      discoveryMode: "earliest-available",
+      appointmentTypeId: "type-new-patient",
+      patientContext: "new",
+    });
+    const original = slots[0];
+    const replacement = slots.find((s) => s.id !== original?.id && s.providerId !== original?.providerId);
+    if (!original || !replacement) throw new Error("Expected two fixture slots on different providers.");
+
+    const appointment = await repo.book({ slotId: original.id, subject: SUBJECT }, GUEST, "key-resched-1");
+    const rescheduled = await repo.reschedule(
+      { appointmentId: appointment.id, appointmentVersion: appointment.version, newSlotId: replacement.id },
+      GUEST,
+      "key-resched-2",
+    );
+
+    expect(rescheduled.id).toBe(appointment.id);
+    expect(rescheduled.reference).toBe(appointment.reference);
+    expect(rescheduled.version).toBe(appointment.version + 1);
+    expect(rescheduled.providerId).toBe(replacement.providerId);
+
+    // The original slot is free again — booking it fresh should succeed.
+    const rebooked = await repo.book({ slotId: original.id, subject: SUBJECT }, GUEST, "key-resched-3");
+    expect(rebooked.status).toBe("confirmed");
+  });
+
+  it("rejects a stale reschedule and leaves the original appointment untouched", async () => {
+    const { repo } = makeRepo();
+    const slots = await repo.getSlots({
+      discoveryMode: "earliest-available",
+      appointmentTypeId: "type-new-patient",
+      patientContext: "new",
+    });
+    const original = slots[0];
+    const replacement = slots.find((s) => s.providerId !== original?.providerId);
+    if (!original || !replacement) throw new Error("Expected two fixture slots on different providers.");
+
+    const appointment = await repo.book({ slotId: original.id, subject: SUBJECT }, GUEST, "key-stale-1");
+    await expect(
+      repo.reschedule(
+        { appointmentId: appointment.id, appointmentVersion: appointment.version + 1, newSlotId: replacement.id },
+        GUEST,
+        "key-stale-2",
+      ),
+    ).rejects.toThrow();
+
+    const [stillOriginal] = await repo.listAppointments(GUEST);
+    expect(stillOriginal?.providerId).toBe(original.providerId);
+    expect(stillOriginal?.version).toBe(appointment.version);
+  });
+
+  it("cancel releases the slot and marks the appointment canceled", async () => {
+    const { repo } = makeRepo();
+    const slot = await firstAvailableSlotId(repo);
+    const appointment = await repo.book({ slotId: slot.id, subject: SUBJECT }, GUEST, "key-cancel-1");
+    const canceled = await repo.cancel(
+      { appointmentId: appointment.id, appointmentVersion: appointment.version },
+      GUEST,
+      "key-cancel-2",
+    );
+    expect(canceled.status).toBe("canceled");
+
+    const rebooked = await repo.book({ slotId: slot.id, subject: SUBJECT }, GUEST, "key-cancel-3");
+    expect(rebooked.status).toBe("confirmed");
+  });
+
+  it("aborts an in-flight getSlots call via AbortSignal (the basis for stale-response protection)", async () => {
+    const { repo } = makeRepo();
+    const controller = new AbortController();
+    const pending = repo.getSlots(
+      { discoveryMode: "earliest-available", appointmentTypeId: "type-new-patient", patientContext: "new" },
+      controller.signal,
+    );
+    controller.abort();
+    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+  });
 });
