@@ -1,7 +1,10 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { ScenariosDrawer } from "@/features/scenarios/ScenariosDrawer";
 import { Button } from "@/design-system/react";
 import { usePreparationStore } from "@/state/preparationStore";
+import { useSessionStore } from "@/state/sessionStore";
+import { generateId } from "@/lib/id";
+import { usePatient } from "@/features/booking/hooks/usePatient";
 
 const NAV_ITEMS = [
   { to: "/book", label: "Book care" },
@@ -12,17 +15,20 @@ const NAV_ITEMS = [
 export function Shell() {
   const preparationVisible = usePreparationStore((s) => s.visible);
   const togglePreparation = usePreparationStore((s) => s.toggle);
+  const actor = useSessionStore((s) => s.actor);
+  const setActor = useSessionStore((s) => s.setActor);
+  const { data: signedInPatient } = usePatient(actor.kind === "patient" ? actor.patientId : undefined);
 
   return (
     <div className="min-h-screen bg-surface-page">
       <header className="border-b border-border bg-surface-raised">
         <div className="mx-auto flex max-w-content items-center justify-between gap-4 p-4">
-          <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3">
             <span className="text-lg font-semibold text-text-primary">Care Booking</span>
             <span className="rounded-full bg-surface-sunken px-2 py-0.5 text-xs font-medium text-text-muted">
               Demo · fictional data
             </span>
-          </div>
+          </Link>
           <nav className="flex items-center gap-1">
             {NAV_ITEMS.map((item) => (
               <NavLink
@@ -37,6 +43,18 @@ export function Shell() {
                 {item.label}
               </NavLink>
             ))}
+            {actor.kind === "patient" ? (
+              <div className="ml-2 flex items-center gap-2 border-l border-border pl-3">
+                <span className="text-sm text-text-muted">{signedInPatient?.fullName ?? "Signed in"}</span>
+                <Button
+                  intent="secondary"
+                  size="sm"
+                  onClick={() => setActor({ kind: "guest", sessionId: generateId("session") })}
+                >
+                  Sign out
+                </Button>
+              </div>
+            ) : null}
             {preparationVisible ? <ScenariosDrawer /> : null}
           </nav>
         </div>

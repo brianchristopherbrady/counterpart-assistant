@@ -5,6 +5,6 @@ import App from "./App";
 describe("App scaffold", () => {
   it("renders without crashing", () => {
     render(<App />);
-    expect(screen.getByText(/Care Booking/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Care Booking/i).length).toBeGreaterThan(0);
   });
 });
