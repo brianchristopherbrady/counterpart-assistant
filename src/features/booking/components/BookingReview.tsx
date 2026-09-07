@@ -10,7 +10,7 @@ export interface BookingReviewProps {
   location: Location;
   displayZone: string;
   onEditProvider: () => void;
-  onEditDetails: () => void;
+  onEditDetails?: () => void;
   onConfirm: () => void;
   pending: boolean;
   errorMessage?: string;
