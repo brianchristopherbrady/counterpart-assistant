@@ -82,6 +82,10 @@ scenario while a booking is in progress asks for confirmation before discarding 
   `react/createComponent.ts` wrapper exposes each one as an ordinary-looking React component.
   See `src/features/study/content/designSystem.tsx` for the full rationale, including the
   explicit trade-off of choosing this architecture for a from-scratch React app.
+- `src/features/landing/` — `LandingPage.tsx`, the app's home route (`/`): choose to continue
+  as a guest or sign in to the patient portal (email-only demo sign-in; no password). Signing in
+  or continuing as guest both route to `/book`. The header also shows a signed-in indicator with
+  a "Sign out" action once patient-portal-signed-in.
 - `src/features/booking/` — the booking flow itself: `BookingFlow.tsx` orchestrates discovery →
   identity/sign-in → review → confirmation across all four scenario presets and reschedule mode.
 - `src/features/appointments/` — listing, reschedule, and cancel.
