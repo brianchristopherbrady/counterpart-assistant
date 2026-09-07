@@ -20,6 +20,7 @@ import type {
   StaffActorContext,
 } from "@/domain/repository";
 import type { BookingSubject } from "@/domain/models";
+import { resolvePatientContext } from "@/domain/eligibility";
 import type { DataScenario } from "@/domain/scenario";
 import {
   ValidationError,
@@ -134,13 +135,6 @@ export class MockBookingRepository implements BookingRepository {
     );
   }
 
-  private resolvePatientContext(subject: BookingSubject): "new" | "established" {
-    if (subject.patientId && this.patientRecords.some((p) => p.id === subject.patientId)) {
-      return "established";
-    }
-    return "new";
-  }
-
   async searchProviders(query: ProviderQuery, signal?: AbortSignal): Promise<Provider[]> {
     const { dataScenario } = this.syncScenario();
     await delay(BASE_DELAY_MS + this.slowExtra(dataScenario), signal);
@@ -214,6 +208,11 @@ export class MockBookingRepository implements BookingRepository {
     });
   }
 
+  async getPatient(patientId: string): Promise<Patient | null> {
+    await delay(BASE_DELAY_MS);
+    return this.patientRecords.find((p) => p.id === patientId) ?? null;
+  }
+
   async registerPatient(subject: BookingSubject): Promise<Patient> {
     await delay(BASE_DELAY_MS);
     const patient: Patient = {
@@ -263,7 +262,10 @@ export class MockBookingRepository implements BookingRepository {
     if (!slot) throw new SlotConflictError();
 
     const type = appointmentTypes.find((t) => t.id === slot.appointmentTypeId);
-    const patientContext = this.resolvePatientContext(input.subject);
+    // Eligibility uses the ORIGINAL seed patients, not the session's growing patientRecords —
+    // a patientId created moments ago via a simulated new-account signup must still count as
+    // "new to the practice," not "established," even though it's now a real patient record.
+    const patientContext = resolvePatientContext(input.subject.patientId, seedPatients);
     if (!type || type.allowedPatientContext !== patientContext) {
       throw new ValidationError("This appointment type isn't available for this patient.");
     }

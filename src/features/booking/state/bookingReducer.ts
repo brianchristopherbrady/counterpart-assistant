@@ -5,6 +5,8 @@ export type BookingAction =
   | { type: "SET_FILTERS"; filters: Partial<BookingFilters> }
   | { type: "SELECT_PROVIDER"; providerId: ProviderId }
   | { type: "SELECT_SLOT"; slotId: SlotId }
+  | { type: "SELECT_PROVIDER_AND_SLOT"; providerId: ProviderId; slotId: SlotId }
+  | { type: "SET_DISCOVERY_MODE"; discoveryMode: BookingDraft["discoveryMode"] }
   | { type: "CLEAR_SLOT" }
   | { type: "SET_SUBJECT"; subject: BookingSubject }
   | { type: "GO_TO_STAGE"; stage: BookingStage }
@@ -19,6 +21,10 @@ export function bookingReducer(draft: BookingDraft, action: BookingAction): Book
       return { ...draft, providerId: action.providerId, slotId: undefined };
     case "SELECT_SLOT":
       return { ...draft, slotId: action.slotId };
+    case "SELECT_PROVIDER_AND_SLOT":
+      return { ...draft, providerId: action.providerId, slotId: action.slotId };
+    case "SET_DISCOVERY_MODE":
+      return { ...draft, discoveryMode: action.discoveryMode, providerId: undefined, slotId: undefined };
     case "CLEAR_SLOT":
       return { ...draft, slotId: undefined };
     case "SET_SUBJECT":

@@ -61,6 +61,7 @@ export interface BookingRepository {
   searchProviders(query: ProviderQuery, signal?: AbortSignal): Promise<Provider[]>;
   getSlots(query: SlotQuery, signal?: AbortSignal): Promise<Slot[]>;
   searchPatients(query: string, actor: StaffActorContext): Promise<Patient[]>;
+  getPatient(patientId: string): Promise<Patient | null>;
   registerPatient(subject: BookingSubject): Promise<Patient>;
   findPatientByEmail(email: string): Promise<Patient | null>;
   listAppointments(actor: ActorContext): Promise<Appointment[]>;

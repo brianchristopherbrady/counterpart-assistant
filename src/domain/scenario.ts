@@ -31,6 +31,8 @@ export type ScenarioConfig = ScenarioOverrides &
         initialSignedIn: true;
         requireSignInToBook: boolean;
         seedPatientId: PatientId;
+        /** Suggested, not mandatory — the patient can still browse/pick any provider. */
+        usualProviderId: string;
       }
     | {
         presetId: "staff-booking";
@@ -51,4 +53,13 @@ export const SCENARIO_PRESET_LABELS: Record<ScenarioConfig["presetId"], string> 
   "returning-patient": "Returning patient",
   "staff-booking": "Staff booking",
   "sign-in-required": "Sign-in required",
+};
+
+export const SCENARIO_PRESET_DESCRIPTIONS: Record<ScenarioConfig["presetId"], string> = {
+  "new-patient": "A patient new to the practice browses as a guest, then books without an account.",
+  "returning-patient":
+    "An established patient starts already signed in, with their details and usual provider suggested.",
+  "staff-booking": "Staff booking asks for the patient first and keeps their identity visible throughout.",
+  "sign-in-required":
+    "Browsing stays open to everyone; a simulated sign-in is only required right before the booking is confirmed.",
 };

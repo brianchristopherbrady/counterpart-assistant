@@ -1,4 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { ScenariosDrawer } from "@/features/scenarios/ScenariosDrawer";
+import { Button } from "@/design-system/react";
+import { usePreparationStore } from "@/state/preparationStore";
 
 const NAV_ITEMS = [
   { to: "/book", label: "Book care" },
@@ -7,6 +10,9 @@ const NAV_ITEMS = [
 ];
 
 export function Shell() {
+  const preparationVisible = usePreparationStore((s) => s.visible);
+  const togglePreparation = usePreparationStore((s) => s.toggle);
+
   return (
     <div className="min-h-screen bg-surface-page">
       <header className="border-b border-border bg-surface-raised">
@@ -17,7 +23,7 @@ export function Shell() {
               Demo · fictional data
             </span>
           </div>
-          <nav className="flex gap-1">
+          <nav className="flex items-center gap-1">
             {NAV_ITEMS.map((item) => (
               <NavLink
                 key={item.to}
@@ -31,10 +37,19 @@ export function Shell() {
                 {item.label}
               </NavLink>
             ))}
+            {preparationVisible ? <ScenariosDrawer /> : null}
           </nav>
         </div>
       </header>
       <Outlet />
+      {!preparationVisible ? (
+        <div className="fixed bottom-4 right-4">
+          <Button intent="secondary" size="sm" onClick={togglePreparation}>
+            Show preparation controls
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }
+
