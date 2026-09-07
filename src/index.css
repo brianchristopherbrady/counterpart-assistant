@@ -1,3 +1,11 @@
+@import "./design-system/tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  background-color: var(--cb-surface-page);
+  color: var(--cb-text-primary);
+  font-family: var(--cb-font-sans);
+}

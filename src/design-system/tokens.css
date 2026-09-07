@@ -1,0 +1,139 @@
+/**
+ * Single authoritative token source. Tailwind's theme (tailwind.config.ts) and the
+ * FASTElement design-system components (design-system/elements/*) both consume these same
+ * custom properties — Tailwind for app-shell/layout, component `css` templates for anything
+ * rendered inside a Shadow DOM (custom properties pierce shadow boundaries; Tailwind classes
+ * do not).
+ */
+:root {
+  /* Base palette (raw values — consume semantic roles below, not these, from feature code) */
+  --cb-color-neutral-0: #ffffff;
+  --cb-color-neutral-50: #f8fafc;
+  --cb-color-neutral-100: #f1f5f9;
+  --cb-color-neutral-200: #e2e8f0;
+  --cb-color-neutral-300: #cbd5e1;
+  --cb-color-neutral-400: #94a3b8;
+  --cb-color-neutral-500: #64748b;
+  --cb-color-neutral-600: #475569;
+  --cb-color-neutral-700: #334155;
+  --cb-color-neutral-800: #1e293b;
+  --cb-color-neutral-900: #0f172a;
+
+  --cb-color-accent-50: #f0fdfa;
+  --cb-color-accent-500: #0f766e;
+  --cb-color-accent-600: #0d5f59;
+  --cb-color-accent-700: #0a4a45;
+
+  --cb-color-blue-500: #3b82f6;
+  --cb-color-blue-600: #2563eb;
+
+  --cb-color-success-600: #15803d;
+  --cb-color-warning-600: #b45309;
+  --cb-color-error-600: #b91c1c;
+  --cb-color-error-700: #991b1b;
+
+  /* Surfaces */
+  --cb-surface-page: var(--cb-color-neutral-50);
+  --cb-surface-raised: var(--cb-color-neutral-0);
+  --cb-surface-sunken: var(--cb-color-neutral-100);
+
+  /* Text */
+  --cb-text-primary: var(--cb-color-neutral-900);
+  --cb-text-muted: var(--cb-color-neutral-600);
+  --cb-text-on-accent: #ffffff;
+  --cb-text-link: var(--cb-color-blue-600);
+
+  /* Borders */
+  --cb-border-default: var(--cb-color-neutral-300);
+  --cb-border-strong: var(--cb-color-neutral-400);
+
+  /* Actions (background/foreground pairs so status/action color is always paired with legible text) */
+  --cb-action-primary-bg: var(--cb-color-accent-500);
+  --cb-action-primary-bg-hover: var(--cb-color-accent-600);
+  --cb-action-primary-bg-active: var(--cb-color-accent-700);
+  --cb-action-primary-fg: #ffffff;
+
+  --cb-action-secondary-bg: var(--cb-color-neutral-0);
+  --cb-action-secondary-bg-hover: var(--cb-color-neutral-100);
+  --cb-action-secondary-fg: var(--cb-color-neutral-900);
+  --cb-action-secondary-border: var(--cb-border-default);
+
+  --cb-action-destructive-bg: var(--cb-color-error-600);
+  --cb-action-destructive-bg-hover: var(--cb-color-error-700);
+  --cb-action-destructive-fg: #ffffff;
+
+  /* Status */
+  --cb-status-success-bg: #f0fdf4;
+  --cb-status-success-fg: var(--cb-color-success-600);
+  --cb-status-warning-bg: #fffbeb;
+  --cb-status-warning-fg: var(--cb-color-warning-600);
+  --cb-status-error-bg: #fef2f2;
+  --cb-status-error-fg: var(--cb-color-error-600);
+  --cb-status-info-bg: var(--cb-color-accent-50);
+  --cb-status-info-fg: var(--cb-color-accent-700);
+
+  /* Focus */
+  --cb-focus-ring-color: var(--cb-color-blue-600);
+  --cb-focus-ring-width: 2px;
+  --cb-focus-ring-offset: 2px;
+
+  /* Shape / elevation */
+  --cb-radius-sm: 4px;
+  --cb-radius-md: 8px;
+  --cb-radius-lg: 12px;
+  --cb-elevation-1: 0 1px 2px rgba(15, 23, 42, 0.08);
+  --cb-elevation-2: 0 4px 12px rgba(15, 23, 42, 0.12);
+
+  /* Spacing scale */
+  --cb-space-1: 4px;
+  --cb-space-2: 8px;
+  --cb-space-3: 12px;
+  --cb-space-4: 16px;
+  --cb-space-5: 20px;
+  --cb-space-6: 24px;
+  --cb-space-8: 32px;
+  --cb-space-12: 48px;
+
+  /* Type scale */
+  --cb-font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --cb-font-size-xs: 0.75rem;
+  --cb-font-size-sm: 0.875rem;
+  --cb-font-size-md: 1rem;
+  --cb-font-size-lg: 1.125rem;
+  --cb-font-size-xl: 1.5rem;
+  --cb-font-weight-regular: 400;
+  --cb-font-weight-medium: 500;
+  --cb-font-weight-semibold: 600;
+  --cb-line-height-normal: 1.5;
+
+  /* Layout */
+  --cb-content-width: 72rem;
+
+  /* Motion */
+  --cb-motion-duration-fast: 100ms;
+  --cb-motion-duration-normal: 150ms;
+
+  /* Control sizing — comfortable density (default) */
+  --cb-control-height-sm: 32px;
+  --cb-control-height-md: 40px;
+  --cb-control-height-lg: 44px;
+  --cb-control-padding-inline: var(--cb-space-3);
+}
+
+/** Compact density variant, toggled via a class for the Study gallery's density comparison. */
+.cb-density-compact {
+  --cb-control-height-sm: 28px;
+  --cb-control-height-md: 32px;
+  --cb-control-height-lg: 36px;
+  --cb-control-padding-inline: var(--cb-space-2);
+  --cb-space-4: 12px;
+  --cb-space-6: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --cb-motion-duration-fast: 0ms;
+    --cb-motion-duration-normal: 0ms;
+  }
+}

@@ -621,11 +621,6 @@
   resolved "https://registry.yarnpkg.com/@microsoft/fast-element/-/fast-element-1.14.0.tgz#6522b16d55788643b04413fab0205e5e9ba4d5c9"
   integrity sha512-zXvuSOzvsu8zDTy9eby8ix8VqLop2rwKRgp++ZN2kTCsoB3+QJVoaGD2T/Cyso2ViZQFXNpiNCVKfnmxBvmWkQ==
 
-"@microsoft/fast-element@^3.0.2":
-  version "3.0.2"
-  resolved "https://registry.yarnpkg.com/@microsoft/fast-element/-/fast-element-3.0.2.tgz#e2697611ed51a79339a8613c4a6415bc601c1ca3"
-  integrity sha512-eNCfcReRuPXyHOB9fwISEIz7BtCFstbZ6SEWrpcsSkVTQ4CCqr0pBYb9RTPbdqLY86Bt2cnEihDaX4zsKCgwpg==
-
 "@microsoft/fast-foundation@^2.50.0":
   version "2.50.0"
   resolved "https://registry.yarnpkg.com/@microsoft/fast-foundation/-/fast-foundation-2.50.0.tgz#60676561df5ce8bad060e4b7feb79f8dce952431"
