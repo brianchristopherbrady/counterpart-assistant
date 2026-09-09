@@ -220,4 +220,66 @@ describe("MockBookingRepository", () => {
     controller.abort();
     await expect(pending).rejects.toMatchObject({ name: "AbortError" });
   });
+
+  it("concurrent-booking-race: repeated automatic calls never snipe; an explicit refresh does", async () => {
+    const { repo, setScenario } = makeRepo();
+    setScenario("concurrent-booking-race");
+    const slot = await firstAvailableSlotId(repo);
+
+    const baseQuery = {
+      discoveryMode: "provider-first" as const,
+      providerId: slot.providerId,
+      appointmentTypeId: "type-new-patient",
+      patientContext: "new" as const,
+      includeUnavailable: true,
+    };
+
+    // Any number of calls without manualRefreshCount (e.g. StrictMode double-invoke, background
+    // refetch-on-focus) must never trigger the simulated concurrent booking.
+    for (let i = 0; i < 3; i += 1) {
+      const result = await repo.getSlots(baseQuery);
+      expect(result.every((s) => s.available !== false)).toBe(true);
+    }
+
+    const afterRefresh = await repo.getSlots({ ...baseQuery, manualRefreshCount: 1 });
+    expect(afterRefresh.some((s) => s.available === false)).toBe(true);
+
+    // The sniped slot is a real confirmed booking now — a real submit for it must conflict too.
+    const sniped = afterRefresh.find((s) => s.available === false)!;
+    await expect(repo.book({ slotId: sniped.id, subject: SUBJECT }, GUEST, "key-race-1")).rejects.toThrow(
+      SlotConflictError,
+    );
+
+    // A second refresh click doesn't snipe again — only ever once per provider per scenario version.
+    const secondRefresh = await repo.getSlots({ ...baseQuery, manualRefreshCount: 2 });
+    expect(secondRefresh.filter((s) => s.available === false)).toHaveLength(
+      afterRefresh.filter((s) => s.available === false).length,
+    );
+  });
+
+  it("concurrent-booking-race prefers sniping the caller's currently selected slot", async () => {
+    const { repo, setScenario } = makeRepo();
+    setScenario("concurrent-booking-race");
+    const slot = await firstAvailableSlotId(repo);
+    const slots = await repo.getSlots({
+      discoveryMode: "earliest-available",
+      appointmentTypeId: "type-new-patient",
+      patientContext: "new",
+    });
+    const notFirst = slots.find((s) => s.providerId === slot.providerId && s.id !== slot.id);
+    if (!notFirst) throw new Error("Expected a second fixture slot for the same provider.");
+
+    const query = {
+      discoveryMode: "provider-first" as const,
+      providerId: slot.providerId,
+      appointmentTypeId: "type-new-patient",
+      patientContext: "new" as const,
+      includeUnavailable: true,
+      preferSnipeSlotId: notFirst.id,
+      manualRefreshCount: 1,
+    };
+    const result = await repo.getSlots(query);
+    const sniped = result.find((s) => s.available === false);
+    expect(sniped?.id).toBe(notFirst.id);
+  });
 });

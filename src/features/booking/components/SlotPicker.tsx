@@ -76,9 +76,11 @@ export function SlotPicker({ slots, selectedSlotId, zoneForSlot, status, onSelec
             const location = locations.find((l) => l.id === slot.locationId);
             const modeLabel = slot.mode === "in-person" ? "In-person" : "Virtual";
             const zoneLabel = formatZoneAbbreviation(slot.startInstant, zone);
+            const isAvailable = slot.available !== false;
             return {
               value: slot.id,
-              label: `${formatTime(slot.startInstant, zone)} ${zoneLabel} · ${modeLabel} · ${location?.name ?? slot.locationId}`,
+              disabled: !isAvailable,
+              label: `${formatTime(slot.startInstant, zone)} ${zoneLabel} · ${modeLabel} · ${location?.name ?? slot.locationId}${isAvailable ? "" : " · Booked"}`,
             };
           })}
         />

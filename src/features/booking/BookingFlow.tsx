@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useBookingDraftStore } from "./state/bookingDraftStore";
 import { useBookAppointment } from "./hooks/useBookAppointment";
 import { useSlots } from "./hooks/useSlots";
-import { usePatient } from "./hooks/usePatient";
+import { useBookingContext } from "./hooks/useBookingContext";
 import { DiscoveryStep } from "./components/DiscoveryStep";
 import { GuestDetailsForm } from "./components/GuestDetailsForm";
 import { PatientSignInForm } from "./components/PatientSignInForm";
@@ -11,24 +11,19 @@ import { StaffPatientLookup } from "./components/StaffPatientLookup";
 import { BookingReview } from "./components/BookingReview";
 import { BookingConfirmation } from "./components/BookingConfirmation";
 import { Button, StatusMessage } from "@/design-system/react";
-import { appointmentTypeForContext, resolvePatientContext } from "@/domain/eligibility";
-import { appointmentTypes, locations, patients, providers } from "@/data/fixtures";
+import { locations, providers } from "@/data/fixtures";
 import { SlotConflictError, StaleAppointmentError } from "@/domain/errors";
 import { VIEWER_TIME_ZONE } from "@/lib/datetime";
 import { useScenarioStore } from "@/state/scenarioStore";
 import { useSessionStore } from "@/state/sessionStore";
-import { useAppointments } from "@/features/appointments/hooks/useAppointments";
 import { useRescheduleAppointment } from "@/features/appointments/hooks/useRescheduleAppointment";
 import type { Appointment } from "@/domain/models";
 
 /** Orchestrates all four scenario presets: guest, returning patient, staff, and sign-in-required. */
 export function BookingFlow() {
   const navigate = useNavigate();
-  const scenario = useScenarioStore((s) => s.config);
   const scenarioVersion = useScenarioStore((s) => s.version);
-  const actor = useSessionStore((s) => s.actor);
   const setActor = useSessionStore((s) => s.setActor);
-  const draft = useBookingDraftStore((s) => s.draft);
   const dispatch = useBookingDraftStore((s) => s.dispatch);
   const resetDraft = useBookingDraftStore((s) => s.resetDraft);
   const bookMutation = useBookAppointment();
@@ -49,26 +44,16 @@ export function BookingFlow() {
     setDiscoveryNotice(undefined);
   }, [scenarioVersion]);
 
-  const isRescheduling = Boolean(draft.reschedulingAppointmentId);
-  const existingAppointmentsQuery = useAppointments(actor);
-  const originalAppointment = isRescheduling
-    ? existingAppointmentsQuery.data?.find((a) => a.id === draft.reschedulingAppointmentId)
-    : undefined;
-
-  // Rescheduling locks the visit type (and therefore patient context) to the original
-  // appointment's; otherwise staff derive eligibility from whichever patient they identified,
-  // and patients get a fixed context from the active scenario.
-  const patientContext = isRescheduling
-    ? (appointmentTypes.find((t) => t.id === draft.filters.appointmentTypeId)?.allowedPatientContext ?? "new")
-    : actor.kind === "staff"
-      ? resolvePatientContext(draft.subject?.patientId, patients)
-      : scenario.actor === "patient"
-        ? scenario.patientContext
-        : "new";
-  const appointmentTypeId = isRescheduling
-    ? draft.filters.appointmentTypeId
-    : appointmentTypeForContext(patientContext, appointmentTypes);
-  const appointmentType = appointmentTypes.find((t) => t.id === appointmentTypeId);
+  const {
+    scenario,
+    actor,
+    draft,
+    isRescheduling,
+    originalAppointment,
+    patientContext,
+    appointmentTypeId,
+    appointmentType,
+  } = useBookingContext();
   const provider = providers.find((p) => p.id === draft.providerId);
 
   // Re-derive the actual Slot record for the chosen provider — hooks must run unconditionally.
@@ -86,23 +71,6 @@ export function BookingFlow() {
   );
   const selectedSlot = (slotsForProviderQuery.data ?? []).find((s) => s.id === draft.slotId);
 
-  // Returning patient: prefill subject from their fixture record and skip guest identity entry.
-  const shouldPrefillReturningPatient =
-    scenario.presetId === "returning-patient" && actor.kind === "patient" && !draft.subject && !isRescheduling;
-  const returningPatientQuery = usePatient(shouldPrefillReturningPatient ? actor.patientId : undefined);
-  useEffect(() => {
-    if (returningPatientQuery.data && shouldPrefillReturningPatient) {
-      dispatch({
-        type: "SET_SUBJECT",
-        subject: {
-          patientId: returningPatientQuery.data.id,
-          fullName: returningPatientQuery.data.fullName,
-          dateOfBirth: returningPatientQuery.data.dateOfBirth,
-          contact: returningPatientQuery.data.contact,
-        },
-      });
-    }
-  }, [returningPatientQuery.data, shouldPrefillReturningPatient, dispatch]);
 
   if (!appointmentTypeId || !appointmentType) {
     return <StatusMessage intent="error">No appointment type is configured for this patient context.</StatusMessage>;

@@ -47,6 +47,9 @@ export interface Slot {
   startInstant: string;
   /** ISO UTC instant. */
   endInstant: string;
+  /** Absent/undefined means available — only set to false when the repository was asked to
+   *  include unavailable slots (e.g. the provider availability page's "show all times" view). */
+  available?: boolean;
   version: number;
 }
 

@@ -81,6 +81,8 @@ export class MockBookingRepository implements BookingRepository {
   private lastScenarioVersion = -1;
   private slotConflictConsumed = false;
   private networkFailureConsumed = false;
+  /** Concurrent-booking-race scenario: providers already sniped this scenario version. */
+  private raceSnipedForProvider = new Set<string>();
 
   constructor(clock: Clock, getScenario: ScenarioReader) {
     this.clock = clock;
@@ -102,6 +104,7 @@ export class MockBookingRepository implements BookingRepository {
   resetDemoData(): void {
     this.appointmentsById.clear();
     this.idempotencyResults.clear();
+    this.raceSnipedForProvider.clear();
     this.persistAppointments();
     this.persistIdempotency();
   }
@@ -121,6 +124,7 @@ export class MockBookingRepository implements BookingRepository {
       this.lastScenarioVersion = version;
       this.slotConflictConsumed = false;
       this.networkFailureConsumed = false;
+      this.raceSnipedForProvider.clear();
     }
     return { dataScenario };
   }
@@ -133,6 +137,63 @@ export class MockBookingRepository implements BookingRepository {
     return [...this.appointmentsById.values()].filter(
       (a) => a.providerId === providerId && a.status === "confirmed" && a.id !== excludeId,
     );
+  }
+
+  private matchesSlotQuery(slot: Slot, query: SlotQuery): boolean {
+    if (slot.appointmentTypeId !== query.appointmentTypeId) return false;
+    if (query.providerId && slot.providerId !== query.providerId) return false;
+    if (query.locationId && slot.locationId !== query.locationId) return false;
+    if (query.mode && slot.mode !== query.mode) return false;
+    if (query.date && !slot.startInstant.startsWith(query.date)) return false;
+    const type = appointmentTypes.find((t) => t.id === slot.appointmentTypeId);
+    if (type && type.allowedPatientContext !== query.patientContext) return false;
+    return true;
+  }
+
+  /**
+   * Simulates another patient completing a booking for this provider WHILE the current user is
+   * still deciding — books the exact slot the user has selected if given (`preferSnipeSlotId`),
+   * otherwise the earliest still-open matching slot. Only triggered by an explicit
+   * "Refresh availability" click (`manualRefreshCount > 0`), never by an automatic/background
+   * refetch — so the first page load deterministically shows real, unsniped availability
+   * regardless of how many times React (e.g. StrictMode in dev) re-invokes the query.
+   */
+  private snipeSlotForConcurrentRace(query: SlotQuery): void {
+    if (!query.providerId) return;
+    const stillOpen = this.allSlots()
+      .filter((slot) => this.matchesSlotQuery(slot, query))
+      .filter(
+        (slot) =>
+          !this.confirmedAppointmentsForProvider(slot.providerId).some((a) =>
+            intervalsOverlap(slot.startInstant, slot.endInstant, a.startInstant, a.endInstant),
+          ),
+      );
+    const target =
+      (query.preferSnipeSlotId && stillOpen.find((s) => s.id === query.preferSnipeSlotId)) ??
+      [...stillOpen].sort((a, b) => a.startInstant.localeCompare(b.startInstant))[0];
+    if (!target) return;
+
+    const now = this.clock.now().toISOString();
+    const phantom: Appointment = {
+      id: generateId("appt-concurrent"),
+      reference: generateReference(),
+      subjectName: "Another patient",
+      subjectDateOfBirth: "1990-01-01",
+      subjectContact: { method: "email", value: "concurrent-demo@example.com" },
+      bookedByActor: { kind: "guest", sessionId: "concurrent-demo-session" },
+      providerId: target.providerId,
+      appointmentTypeId: target.appointmentTypeId,
+      mode: target.mode,
+      locationId: target.locationId,
+      startInstant: target.startInstant,
+      endInstant: target.endInstant,
+      status: "confirmed",
+      version: 1,
+      createdAt: now,
+    };
+    this.appointmentsById.set(phantom.id, phantom);
+    this.persistAppointments();
+    this.raceSnipedForProvider.add(query.providerId);
   }
 
   async searchProviders(query: ProviderQuery, signal?: AbortSignal): Promise<Provider[]> {
@@ -161,6 +222,16 @@ export class MockBookingRepository implements BookingRepository {
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
     if (dataScenario === "no-availability") return [];
 
+    if (
+      dataScenario === "concurrent-booking-race" &&
+      query.includeUnavailable &&
+      query.providerId &&
+      (query.manualRefreshCount ?? 0) > 0 &&
+      !this.raceSnipedForProvider.has(query.providerId)
+    ) {
+      this.snipeSlotForConcurrentRace(query);
+    }
+
     const bookedIntervalsByProvider = new Map<string, Array<{ start: string; end: string }>>();
     for (const appointment of this.appointmentsById.values()) {
       if (appointment.status !== "confirmed") continue;
@@ -169,22 +240,16 @@ export class MockBookingRepository implements BookingRepository {
       bookedIntervalsByProvider.set(appointment.providerId, list);
     }
 
-    return this.allSlots().filter((slot) => {
-      if (slot.appointmentTypeId !== query.appointmentTypeId) return false;
-      if (query.providerId && slot.providerId !== query.providerId) return false;
-      if (query.locationId && slot.locationId !== query.locationId) return false;
-      if (query.mode && slot.mode !== query.mode) return false;
-      if (query.date && !slot.startInstant.startsWith(query.date)) return false;
-
-      const type = appointmentTypes.find((t) => t.id === slot.appointmentTypeId);
-      if (type && type.allowedPatientContext !== query.patientContext) return false;
-
-      const booked = bookedIntervalsByProvider.get(slot.providerId) ?? [];
-      const overlapsBooked = booked.some((b) =>
-        intervalsOverlap(slot.startInstant, slot.endInstant, b.start, b.end),
-      );
-      return !overlapsBooked;
-    });
+    return this.allSlots()
+      .filter((slot) => this.matchesSlotQuery(slot, query))
+      .map((slot) => {
+        const booked = bookedIntervalsByProvider.get(slot.providerId) ?? [];
+        const overlapsBooked = booked.some((b) =>
+          intervalsOverlap(slot.startInstant, slot.endInstant, b.start, b.end),
+        );
+        return { ...slot, available: !overlapsBooked };
+      })
+      .filter((slot) => query.includeUnavailable || slot.available);
   }
 
   private slowExtra(dataScenario: DataScenario): number {

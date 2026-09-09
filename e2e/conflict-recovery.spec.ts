@@ -20,6 +20,8 @@ test.describe("Conflicting booking preserves details (Behavior 5)", () => {
     // Back at discovery — the provider stays selected and filters/details are preserved.
     await expect(page.getByRole("button", { name: "Selected" })).toBeVisible();
 
+    // Re-opening the same provider's availability page to pick a different time.
+    await page.getByRole("button", { name: "Selected" }).click();
     await page.getByRole("radio").nth(1).click();
     await page.getByRole("button", { name: "Continue" }).click();
 

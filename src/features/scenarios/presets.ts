@@ -74,4 +74,5 @@ export const DATA_SCENARIO_LABELS: Record<DataScenario, string> = {
   "slot-taken-on-submit": "Slot taken on submit",
   "network-failure-once": "Network failure once",
   "slow-response": "Slow response",
+  "concurrent-booking-race": "Concurrent booking race",
 };

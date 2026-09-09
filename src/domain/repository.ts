@@ -10,6 +10,7 @@ import type {
   Provider,
   ProviderId,
   Slot,
+  SlotId,
   VisitMode,
 } from "./models";
 
@@ -29,6 +30,15 @@ export interface SlotQuery {
   mode?: VisitMode;
   patientContext: PatientContext;
   date?: string;
+  /** Return every candidate slot (each flagged `available`) instead of silently dropping booked ones. */
+  includeUnavailable?: boolean;
+  /** Concurrent-booking-race scenario only: prefer sniping this exact slot, so the demo can show
+   *  "the time you were looking at was just booked," not an arbitrary one. */
+  preferSnipeSlotId?: SlotId;
+  /** Concurrent-booking-race scenario only: a value > 0 marks this call as triggered by an
+   *  explicit "Refresh availability" click (not an automatic/background refetch), which is the
+   *  only kind of call eligible to reveal the simulated concurrent booking. */
+  manualRefreshCount?: number;
 }
 
 export interface BookingInput {

@@ -7,7 +7,8 @@ export type DataScenario =
   | "no-availability"
   | "slot-taken-on-submit"
   | "network-failure-once"
-  | "slow-response";
+  | "slow-response"
+  | "concurrent-booking-race";
 
 interface ScenarioOverrides {
   discoveryMode: DiscoveryMode;
