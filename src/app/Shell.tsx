@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { ScenariosDrawer } from "@/features/scenarios/ScenariosDrawer";
 import { Button } from "@/design-system/react";
 import { usePreparationStore } from "@/state/preparationStore";
@@ -18,6 +18,11 @@ export function Shell() {
   const actor = useSessionStore((s) => s.actor);
   const setActor = useSessionStore((s) => s.setActor);
   const { data: signedInPatient } = usePatient(actor.kind === "patient" ? actor.patientId : undefined);
+  const { pathname } = useLocation();
+  // The landing page IS the "Book care"/"Appointments" entry point (via its guest/sign-in
+  // choice) — repeating them in the nav there is redundant before that choice is made.
+  const isLanding = pathname === "/";
+  const navItems = isLanding ? NAV_ITEMS.filter((item) => item.to === "/study") : NAV_ITEMS;
 
   return (
     <div className="min-h-screen bg-surface-page">
@@ -30,7 +35,7 @@ export function Shell() {
             </span>
           </Link>
           <nav className="flex items-center gap-1">
-            {NAV_ITEMS.map((item) => (
+            {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
