@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { applyScenario } from "./utils";
+import { applyScenario, slotTimeButtons } from "./utils";
 
 test.describe("Reschedule and cancel occupancy (Behavior 7)", () => {
   test("failed reschedule keeps the original; successful reschedule moves occupancy; cancel releases it", async ({
@@ -11,7 +11,7 @@ test.describe("Reschedule and cancel occupancy (Behavior 7)", () => {
     // and the previously-booked appointment would fall out of view.
     await applyScenario(page, { preset: "Returning patient" });
     await page.getByRole("button", { name: "Book with them" }).click();
-    await page.getByRole("radio").first().click();
+    await slotTimeButtons(page).first().click();
     await page.getByRole("button", { name: "Continue" }).click();
     await page.getByRole("button", { name: "Confirm booking" }).click();
     await expect(page.getByRole("heading", { name: "Booking confirmed" })).toBeVisible();
@@ -21,7 +21,7 @@ test.describe("Reschedule and cancel occupancy (Behavior 7)", () => {
 
     await page.getByRole("button", { name: "Reschedule" }).click();
     await page.getByRole("button", { name: "Select" }).first().click();
-    await page.getByRole("radio").nth(1).click();
+    await slotTimeButtons(page).nth(1).click();
     await page.getByRole("button", { name: "Continue" }).click();
     await page.getByRole("button", { name: "Confirm reschedule" }).click();
 
@@ -32,7 +32,7 @@ test.describe("Reschedule and cancel occupancy (Behavior 7)", () => {
 
     await page.getByRole("button", { name: "Reschedule" }).click();
     await page.getByRole("button", { name: "Select" }).first().click();
-    await page.getByRole("radio").nth(1).click();
+    await slotTimeButtons(page).nth(1).click();
     await page.getByRole("button", { name: "Continue" }).click();
 
     // Capture the new time being confirmed so we can wait for the appointments list to actually

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { applyScenario } from "./utils";
+import { applyScenario, slotTimeButtons } from "./utils";
 
 test.describe("Idempotent retry after a pre-commit failure (Behavior 6)", () => {
   test("a network-failure-once fault recovers on retry and creates exactly one appointment", async ({ page }) => {
@@ -7,7 +7,7 @@ test.describe("Idempotent retry after a pre-commit failure (Behavior 6)", () => 
     await applyScenario(page, { dataScenario: "Network failure once", preset: "New patient" });
 
     await page.getByRole("button", { name: "Select" }).first().click();
-    await page.getByRole("radio").first().click();
+    await slotTimeButtons(page).first().click();
     await page.getByRole("button", { name: "Continue" }).click();
 
     await page.getByRole("textbox", { name: "Full name" }).fill("Drew Retry");

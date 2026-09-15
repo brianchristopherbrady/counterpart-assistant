@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { within, userEvent, expect } from "@storybook/test";
+import { within, userEvent, expect, fn } from "@storybook/test";
 import { SlotPicker } from "./SlotPicker";
 import { providers, locations } from "@/data/fixtures";
 import { zoneForSlot } from "../utils/zone";
@@ -48,14 +48,15 @@ export const Narrow: Story = {
   decorators: [(Story) => <div style={{ maxWidth: 320 }}><Story /></div>],
 };
 
-/** Verifies a slot is keyboard-focusable and then selectable — matches how FAST's radio activates. */
+/** Verifies a slot button is keyboard-focusable and invokes onSelect with its id. */
 export const KeyboardSelection: Story = {
-  play: async ({ canvasElement }) => {
+  args: { onSelect: fn() },
+  play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
-    const firstOption = await canvas.findByRole("radio", { name: /9:00 AM/i });
+    const firstOption = await canvas.findByRole("button", { name: /9:00 AM/i });
     firstOption.focus();
     await expect(firstOption).toHaveFocus();
     await userEvent.click(firstOption);
-    await expect(firstOption).toBeChecked();
+    await expect(args.onSelect).toHaveBeenCalledWith("slot-1");
   },
 };

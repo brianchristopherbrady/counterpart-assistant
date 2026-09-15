@@ -35,3 +35,9 @@ async function selectCustomOption(page: Page, comboboxName: string, optionLabel:
   await page.getByRole("combobox", { name: comboboxName }).click();
   await page.getByRole("option", { name: optionLabel, exact: true }).click();
 }
+
+/** Time-slot picks are plain buttons labeled with a clock time — distinguishes them from the
+ *  page's other buttons ("Back to providers", "Refresh availability", "Continue", etc.). */
+export function slotTimeButtons(page: Page) {
+  return page.getByRole("button", { name: /\d{1,2}:\d{2}\s*(AM|PM)/ });
+}

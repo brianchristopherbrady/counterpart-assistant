@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { applyScenario } from "./utils";
+import { applyScenario, slotTimeButtons } from "./utils";
 
 test.describe("Conflicting booking preserves details (Behavior 5)", () => {
   test("a slot-taken-on-submit conflict keeps entered details and offers current alternatives", async ({ page }) => {
@@ -7,7 +7,7 @@ test.describe("Conflicting booking preserves details (Behavior 5)", () => {
     await applyScenario(page, { dataScenario: "Slot taken on submit", preset: "New patient" });
 
     await page.getByRole("button", { name: "Select" }).first().click();
-    await page.getByRole("radio").first().click();
+    await slotTimeButtons(page).first().click();
     await page.getByRole("button", { name: "Continue" }).click();
 
     await page.getByRole("textbox", { name: "Full name" }).fill("Riley Conflict");
@@ -22,7 +22,7 @@ test.describe("Conflicting booking preserves details (Behavior 5)", () => {
 
     // Re-opening the same provider's availability page to pick a different time.
     await page.getByRole("button", { name: "Selected" }).click();
-    await page.getByRole("radio").nth(1).click();
+    await slotTimeButtons(page).nth(1).click();
     await page.getByRole("button", { name: "Continue" }).click();
 
     // The guest details from before the conflict are still there — no re-entry required.

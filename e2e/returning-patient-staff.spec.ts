@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { applyScenario } from "./utils";
+import { applyScenario, slotTimeButtons } from "./utils";
 
 test.describe("Returning-patient prefill and staff actor/subject (Behavior 3)", () => {
   test("returning patient starts signed in with prefilled details and a suggested provider", async ({ page }) => {
@@ -9,7 +9,7 @@ test.describe("Returning-patient prefill and staff actor/subject (Behavior 3)", 
     // No guest identity form — the usual-provider suggestion implies the subject is already known.
     await expect(page.getByText(/usual provider/)).toBeVisible();
     await page.getByRole("button", { name: "Book with them" }).click();
-    await page.getByRole("radio").first().click();
+    await slotTimeButtons(page).first().click();
     await page.getByRole("button", { name: "Continue" }).click();
 
     // Straight to review — Jordan Blake's fixture identity, no GuestDetailsForm in between.

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { applyScenario } from "./utils";
+import { applyScenario, slotTimeButtons } from "./utils";
 
 test.describe("Sign-in-required late gate (Behavior 2)", () => {
   test("gates only the final submission, resumes the draft, and still validates on submit", async ({ page }) => {
@@ -9,7 +9,7 @@ test.describe("Sign-in-required late gate (Behavior 2)", () => {
     // Browsing and discovery never require sign-in.
     await expect(page.getByRole("button", { name: "Select" }).first()).toBeVisible();
     await page.getByRole("button", { name: "Select" }).first().click();
-    await page.getByRole("radio").first().click();
+    await slotTimeButtons(page).first().click();
     await page.getByRole("button", { name: "Continue" }).click();
 
     await page.getByRole("textbox", { name: "Full name" }).fill("Morgan Late");

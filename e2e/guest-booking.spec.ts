@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { slotTimeButtons } from "./utils";
 
 test.describe("Guest new-patient booking (Behavior 1)", () => {
   test("browses publicly, confirms a guest booking, and appointments stay session-scoped", async ({
@@ -11,7 +12,7 @@ test.describe("Guest new-patient booking (Behavior 1)", () => {
     await expect(page.getByRole("button", { name: "Select" }).first()).toBeVisible();
 
     await page.getByRole("button", { name: "Select" }).first().click();
-    await page.getByRole("radio").first().click();
+    await slotTimeButtons(page).first().click();
     await page.getByRole("button", { name: "Continue" }).click();
 
     await page.getByRole("textbox", { name: "Full name" }).fill("Casey Guest");
